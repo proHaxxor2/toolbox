@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Webhook Multi-Tool</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #0f0f13;
+            color: #e0e0e0;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+            cursor: none !important;
+        }
+        .cursor {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #5865F2;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: all 0.1s ease;
+        }
+        .cursor-follower {
+            width: 30px;
+            height: 30px;
+            background: rgba(88, 101, 242, 0.2);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            transition: all 0.3s ease;
+        }
+        button, input, textarea {
+            cursor: none !important;
+        }
+        .nav-item {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #5865F2;
+        }
+        .tab {
+            display: none;
+        }
+        .tab.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .feature-card {
+            background: #1e1e26;
+            border-radius: 12px;
+            border: 1px solid #2c2c38;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border-color: #5865F2;
+        }
+        input, textarea {
+            background: #2c2c38;
+            border: 1px solid #3e3e4a;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        input:focus, textarea:focus {
+            border-color: #5865F2;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.2);
+        }
+        .btn {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(30, 30);
+                opacity: 0;
+            }
+        }
+        .badge {
+            background: #2c2c38;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            color: #8e8e9a;
+        }
+    </style>
+</head>
+<body>
+    <!-- Custom Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-2 text-white">Discord Webhook Multi-Tool</h1>
+            <p class="text-gray-400">Manage, send and test Discord webhooks with a modern interface</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex justify-center mb-8">
+            <div class="flex space-x-8 bg-gray-900 bg-opacity-50 px-6 py-3 rounded-full">
+                <button class="nav-item active px-2 py-1 font-medium" data-tab="message">Message</button>
+                <button class="nav-item px-2 py-1 font-medium" data-tab="webhooks">Webhooks</button>
+                <button class="nav-item px-2 py-1 font-medium" data-tab="history">History</button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="tab active" id="message-tab">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Column - Config -->
+                <div class="feature-card p-6">
+                    <h2 class="text-xl font-semibold mb-4">Webhook Configuration</h2>
+                    <p class="text-gray-400 text-sm mb-4">Enter your webhook URL and customize the sender</p>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Webhook URL</label>
+                        <input type="text" id="webhookUrl" placeholder="https://discord.com/api/webhooks/..." class="w-full p-3 text-sm" aria-label="Webhook URL">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Override Username <span class="badge">optional</span></label>
+                            <input type="text" id="username" placeholder="Custom Bot Name" class="w-full p-3 text-sm" aria-label="Custom Username">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Avatar URL <span class="badge">optional</span></label>
+                            <input type="text" id="avatarUrl" placeholder="https://example.com/avatar.png" class="w-full p-3 text-sm" aria-label="Avatar URL">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Message Content</label>
+                        <textarea id="messageContent" rows="6" class="w-full p-3 text-sm" placeholder="Enter your webhook message here..." aria-label="Message Content"></textarea>
+                    </div>
+                    
+                    <div class="flex items-center mt-2 mb-6">
+                        <input type="checkbox" id="tts" class="mr-2" aria-label="Text-to-Speech">
+                        <label for="tts" class="text-sm">Coming Soon</label>
+                        
+                        <input type="checkbox" id="embed" class="ml-6 mr-2" aria-label="Include Embed">
+                        <label for="embed" class="text-sm">Coming Soon</label>
+                        
+                        <input type="checkbox" id="spam" class="ml-6 mr-2" aria-label="Spam Mode">
+                        <label for="spam" class="text-sm">Spam Mode</label>
+                    </div>
+                    
+                    <div id="spamOptions" class="hidden mb-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Message Count</label>
+                                <input type="number" id="spamCount" min="1" max="100" value="10" class="w-full p-3 text-sm" aria-label="Spam Message Count">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Delay (ms)</label>
+                                <input type="number" id="spamDelay" min="100" max="5000" value="100" class="w-full p-3 text-sm" aria-label="Spam Delay">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <button id="clearBtn" class="btn bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded">Clear</button>
+                        <button id="sendBtn" class="btn bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-6 rounded flex items-center">
+                            <span>Send Webhook</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Right Column - Preview -->
+                <div class="feature-card p-6">
+                    <h2 class="text-xl font-semibold mb-4">Preview</h2>
+                    <p class="text-gray-400 text-sm mb-4">How your message will appear in Discord</p>
+                    
+                    <div class="bg-gray-900 rounded-lg p-4 min-h-64">
+                        <div class="flex items-center mb-2">
+                            <div class="w-10 h-10 rounded-full bg-indigo-600 mr-3 flex items-center justify-center" id="previewAvatar">
+                                <span class="text-white font-bold" id="previewInitial">W</span>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-indigo-400" id="previewUsername">Webhook</p>
+                                <p class="text-gray-500 text-xs">Today at 12:00 PM</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 text-gray-300" id="previewContent">
+                            Your message will appear here...
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h3 class="text-md font-medium mb-2">Response</h3>
+                        <div class="bg-gray-900 rounded-lg p-3 text-sm font-mono" id="responseStatus">
+                            Status: Waiting to send...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Webhooks Tab -->
+        <div class="tab" id="webhooks-tab">
+            <div class="feature-card p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold">Webhook Management</h2>
+                    <div>
+                        <button id="addWebhookBtn" class="bg-green-600 hover:bg-green-500 text-white py-2 px-4 rounded text-sm flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add New
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Webhook Info -->
+                    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium">Server Announcements</h3>
+                            <div class="flex space-x-2">
+                                <button class="text-blue-400 hover:text-blue-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                <button class="text-red-400 hover:text-red-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-sm truncate">https://discord.com/api/webhooks/123456789/example</p>
+                        <div class="flex mt-2">
+                            <span class="bg-indigo-900 text-indigo-300 text-xs px-2 py-1 rounded">General</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Webhook Info -->
+                    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium">Bot Notifications</h3>
+                            <div class="flex space-x-2">
+                                <button class="text-blue-400 hover:text-blue-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                <button class="text-red-400 hover:text-red-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-sm truncate">https://discord.com/api/webhooks/987654321/example</p>
+                        <div class="flex mt-2">
+                            <span class="bg-green-900 text-green-300 text-xs px-2 py-1 rounded">Monitor</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium mb-3">Webhook Testing</h3>
+                    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Webhook URL</label>
+                                <input type="text" id="testWebhookUrl" placeholder="Enter webhook URL" class="w-full p-2 text-sm" aria-label="Test Webhook URL">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Method</label>
+                                <select id="testMethod" class="w-full p-2 text-sm bg-gray-700 border border-gray-600 rounded" aria-label="Test Method">
+                                    <option value="GET">GET (Info)</option>
+                                    <option value="DELETE">DELETE</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button id="testBtn" class="btn bg-purple-600 hover:bg-purple-500 text-white py-2 px-4 rounded w-full">Run Test</button>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h4 class="text-sm font-medium mb-2">Response</h4>
+                            <pre id="testResponse" class="bg-gray-900 rounded p-3 text-sm font-mono overflow-x-auto max-h-40">No response yet...</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- History Tab -->
+        <div class="tab" id="history-tab">
+            <div class="feature-card p-6">
+                <h2 class="text-xl font-semibold mb-6">Message History</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-gray-800 rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-gray-700">
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Webhook</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Message</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">5/16/2025 11:23 AM</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">Server Announcements</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">Weekly server update notification...</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 py-1 text-xs rounded-full bg-green-900 text-green-300">Success</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                    <button class="text-blue-400 hover:text-blue-300 mr-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </button>
+                                    <button class="text-red-400 hover:text-red-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">5/15/2025 3:45 PM</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">Bot Notifications</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">Server performance report...</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 py-1 text-xs rounded-full bg-green-900 text-green-300">Success</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                    <button class="text-blue-400 hover:text-blue-300 mr-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </button>
+                                    <button class="text-red-400 hover:text-red-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium mb-3">Export Options</h3>
+                    <div class="flex space-x-4">
+                        <button class="btn bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded text-sm flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Export JSON
+                        </button>
+                        <button class="btn bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded text-sm flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Export CSV
+                        </button>
+                        <button class="btn bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded text-sm flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Clear History
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="container mx-auto px-4 py-8 mt-12 border-t border-gray-800">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <p class="text-gray-500 text-sm">© 2025 Discord Webhook Multi-Tool - Made with ❤️</p>
+            <div class="flex space-x-6 mt-4 md:mt-0">
+                <a href="#" class="text-gray-400 hover:text-indigo-400">
+                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-indigo-400">
+                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.03 10.03 0 01-3.127 1.184A4.92 4.92 0 0011.78 8.28a13.98 13.98 0 01-10.134-5.147 4.92 4.92 0 001.525 6.574A4.911 4.911 0 01.96 9.116v.062a4.926 4.926 0 003.95 4.827 4.95 4.95 0 01-2.223.084 4.935 4.935 0 004.6 3.42A9.88 9.88 0 010 19.54a13.94 13.94 0 007.548 2.208c9.056 0 14-7.5 14-14 0-.21 0-.42-.015-.63A10.016 10.016 0 0024 4.59z"/></svg>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-indigo-400">
+                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.94v5.666H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.454C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Custom Cursor
+        const cursor = document.querySelector('.cursor');
+        const cursorFollower = document.querySelector('.cursor-follower');
+        
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            
+            setTimeout(() => {
+                cursorFollower.style.left = e.clientX + 'px';
+                cursorFollower.style.top = e.clientY + 'px';
+            }, 100);
+        });
+        
+        document.addEventListener('mousedown', () => {
+            cursor.style.transform = 'scale(0.7)';
+            cursorFollower.style.transform = 'scale(0.7)';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            cursor.style.transform = 'scale(1)';
+            cursorFollower.style.transform = 'scale(1)';
+        });
+        
+        // Tab Navigation
+        const navItems = document.querySelectorAll('.nav-item');
+        const tabs = document.querySelectorAll('.tab');
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const tabId = item.getAttribute('data-tab');
+                
+                navItems.forEach(navItem => navItem.classList.remove('active'));
+                tabs.forEach(tab => tab.classList.remove('active'));
+                
+                item.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+        
+        // Message Preview
+        const messageContent = document.getElementById('messageContent');
+        const previewContent = document.getElementById('previewContent');
+        const username = document.getElementById('username');
+        const previewUsername = document.getElementById('previewUsername');
+        const avatarUrl = document.getElementById('avatarUrl');
+        const previewAvatar = document.getElementById('previewAvatar');
+        const previewInitial = document.getElementById('previewInitial');
+        
+        messageContent.addEventListener('input', () => {
+            previewContent.textContent = messageContent.value || 'Your message will appear here...';
+        });
+        
+        username.addEventListener('input', () => {
+            previewUsername.textContent = username.value || 'Webhook';
+            previewInitial.textContent = (username.value.charAt(0) || 'W').toUpperCase();
+        });
+        
+        avatarUrl.addEventListener('input', () => {
+            if (avatarUrl.value) {
+                previewAvatar.innerHTML = `<img src="${avatarUrl.value}" class="w-10 h-10 rounded-full object-cover" alt="Avatar">`;
+            } else {
+                previewAvatar.innerHTML = `<span class="text-white font-bold" id="previewInitial">${(username.value.charAt(0) || 'W').toUpperCase()}</span>`;
+            }
+        });
+        
+        // Spam Mode Toggle
+        const spamCheckbox = document.getElementById('spam');
+        const spamOptions = document.getElementById('spamOptions');
+        
+        spamCheckbox.addEventListener('change', () => {
+            spamOptions.classList.toggle('hidden', !spamCheckbox.checked);
+        });
+        
+        // Send Webhook
+        const sendBtn = document.getElementById('sendBtn');
+        const webhookUrl = document.getElementById('webhookUrl');
+        const responseStatus = document.getElementById('responseStatus');
+        const clearBtn = document.getElementById('clearBtn');
+        const spamCount = document.getElementById('spamCount');
+        const spamDelay = document.getElementById('spamDelay');
+        let isSpamming = false;
+        
+        async function sendSingleMessage() {
+            try {
+                const payload = {
+                    content: messageContent.value,
+                    tts: document.getElementById('tts').checked
+                };
+                
+                if (username.value) {
+                    payload.username = username.value;
+                }
+                
+                if (avatarUrl.value) {
+                    payload.avatar_url = avatarUrl.value;
+                }
+                
+                const response = await fetch(webhookUrl.value, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                return response.ok
+                    ? `Status: Message sent successfully!`
+                    : `Status: Error ${response.status} - ${response.statusText}`;
+            } catch (error) {
+                return `Status: Error - ${error.message}`;
+            }
+        }
+        
+        async function spamMessages() {
+            if (isSpamming) return;
+            isSpamming = true;
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Stop Spamming';
+            
+            const count = parseInt(spamCount.value) || 10;
+            const delay = parseInt(spamDelay.value) || 100;
+            
+            for (let i = 0; i < count && isSpamming; i++) {
+                responseStatus.textContent = `Status: Sending message ${i + 1}/${count}...`;
+                responseStatus.classList.remove('text-red-400', 'text-green-400');
+                
+                const status = await sendSingleMessage();
+                responseStatus.textContent = status;
+                responseStatus.classList.add(status.includes('Error') ? 'text-red-400' : 'text-green-400');
+                
+                if (status.includes('Error')) break;
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            
+            isSpamming = false;
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = `
+                <span>Send Webhook</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            `;
+        }
+        
+        sendBtn.addEventListener('click', async () => {
+            if (!webhookUrl.value) {
+                responseStatus.textContent = 'Status: Please enter a webhook URL!';
+                responseStatus.classList.add('text-red-400');
+                return;
+            }
+            
+            if (spamCheckbox.checked) {
+                if (isSpamming) {
+                    isSpamming = false;
+                    return;
+                }
+                await spamMessages();
+            } else {
+                responseStatus.textContent = 'Status: Sending...';
+                responseStatus.classList.remove('text-red-400', 'text-green-400');
+                
+                const status = await sendSingleMessage();
+                responseStatus.textContent = status;
+                responseStatus.classList.add(status.includes('Error') ? 'text-red-400' : 'text-green-400');
+            }
+        });
+        
+        clearBtn.addEventListener('click', () => {
+            webhookUrl.value = '';
+            messageContent.value = '';
+            username.value = '';
+            avatarUrl.value = '';
+            document.getElementById('tts').checked = false;
+            document.getElementById('embed').checked = false;
+            document.getElementById('spam').checked = false;
+            spamOptions.classList.add('hidden');
+            
+            previewContent.textContent = 'Your message will appear here...';
+            previewUsername.textContent = 'Webhook';
+            previewInitial.textContent = 'W';
+            previewAvatar.innerHTML = '<span class="text-white font-bold" id="previewInitial">W</span>';
+            
+            responseStatus.textContent = 'Status: Waiting to send...';
+            responseStatus.classList.remove('text-red-400', 'text-green-400');
+        });
+        
+        // Test Webhook
+        const testBtn = document.getElementById('testBtn');
+        const testWebhookUrl = document.getElementById('testWebhookUrl');
+        const testMethod = document.getElementById('testMethod');
+        const testResponse = document.getElementById('testResponse');
+        
+        testBtn.addEventListener('click', async () => {
+            if (!testWebhookUrl.value) {
+                testResponse.textContent = 'Please enter a webhook URL!';
+                return;
+            }
+            
+            testResponse.textContent = 'Running test...';
+            
+            try {
+                const response = await fetch(testWebhookUrl.value, {
+                    method: testMethod.value
+                });
+                
+                const data = await response.json().catch(() => null);
+                
+                if (data) {
+                    testResponse.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    testResponse.textContent = `Status: ${response.status} - ${response.statusText}`;
+                }
+            } catch (error) {
+                testResponse.textContent = `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
